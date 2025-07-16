@@ -480,6 +480,53 @@ class Scraper:
             option.click();
         """, sort_value)
 
+    def _get_price_calculation(self) -> Dict[str, str]:
+        return self.driver.execute_script("""
+            const result = {
+                currency_rates: {},
+                total_price: null,
+                breakdown: {}
+            };
+            
+            // Получаем блок с расчетом цены
+            const calculationBlock = document.querySelector('div.car_body__right_part__row__price__calculation');
+            if (!calculationBlock) return result;
+            
+            // Получаем дату курса валют
+            const currencyHeader = calculationBlock.querySelector('b');
+            if (currencyHeader && currencyHeader.textContent.includes('Курсы валют')) {
+                result.currency_date = currencyHeader.textContent.replace('Курсы валют на ', '').trim();
+            }
+            
+            // Получаем все div элементы и ищем курс евро
+            const divElements = calculationBlock.querySelectorAll('div');
+            divElements.forEach(div => {
+                const text = div.textContent.trim();
+                if (text.includes('€ =')) {
+                    result.currency_rates['EUR'] = text.replace('€ =', '').trim();
+                }
+            });
+            
+            // Получаем итоговую цену
+            const totalPriceElement = calculationBlock.querySelector('span.price_in_calculation');
+            if (totalPriceElement) {
+                result.total_price = totalPriceElement.textContent.trim();
+            }
+            
+            // Парсим разбивку цены
+            const breakdownItems = calculationBlock.querySelectorAll('ul ul li');
+            breakdownItems.forEach(item => {
+                const text = item.textContent.trim();
+                const name = text.split(':')[0].trim();
+                const valueElement = item.querySelector('b');
+                if (name && valueElement) {
+                    result.breakdown[name] = valueElement.textContent.trim();
+                }
+            });
+            
+            return result;
+        """)
+
     def scrape_cars(self, page_num: str, filters: Dict[str, str], order_by: str | None) -> List[Dict]:
         try:
             self._load_searchpage(self.url)
@@ -553,6 +600,20 @@ class Scraper:
         try:
             self._load_carpage(self.url)
             return self._get_car_details(id)
+        except JavascriptException as e:
+            logger.error(f"JS error: {str(e)}")
+            raise
+        except TimeoutException:
+            logger.error("Timeout while waiting for page elements")
+            raise
+        except Exception as e:
+            logger.exception("Unexpected error during scraping")
+            raise
+
+    def scrape_price_calculation(self) -> Dict[str, str]:
+        try:
+            self._load_carpage(self.url)
+            return self._get_price_calculation()
         except JavascriptException as e:
             logger.error(f"JS error: {str(e)}")
             raise
