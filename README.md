@@ -187,4 +187,43 @@
     <li>404: Автомобиль не найден</li>
     <li>500: Внутренняя ошибка сервера</li>
 </ul>
+
+<h3>6. GET /api/v1/cars/&lt;id&gt;/price</h3>
+<p><strong>Description</strong>: Получение детальной информации о расчете цены автомобиля по ID.</p>
+
+<h4>Parameters:</h4>
+<ul>
+    <li><code>id</code> (string, required): Уникальный идентификатор автомобиля</li>
+</ul>
+
+<h4>Example Request:</h4>
+<pre><code>GET /api/v1/cars/10420276/price</code></pre>
+
+<h4>Example Response:</h4>
+<pre><code class="language-json">{
+    "success": true,
+    "price_calculation": {
+        "currency_date": "16-07-2025 23:21",
+        "currency_rates": {
+            "EUR": "91.1531"
+        },
+        "total_price": "6 922 665 ₽",
+        "breakdown": {
+            "Услуги агента": "100 000 ₽",
+            "Стоимость авто + расходы в Корее": "1 856 364 ₽",
+            "Таможенные платежи": "1 251 501 ₽ (13 730 € )",
+            "Утильсбор": "3 604 800 ₽",
+            "Таможенный брокер": "110 000 ₽",
+            "Автовоз": "0 ₽"
+        }
+    }
+}</code></pre>
+
+<h4>Status Codes:</h4>
+<ul>
+    <li>200: Успешный запрос</li>
+    <li>404: Автомобиль не найден</li>
+    <li>500: Внутренняя ошибка сервера</li>
+    <li>504: Сайт не отвечает</li>
+</ul>
 </body>
