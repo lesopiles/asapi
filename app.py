@@ -600,7 +600,104 @@ def get_car_details(id):
             status=504,
             mimetype='application/json; charset=utf-8'
         )
-    
+
+@app.route("/api/v1/cars/<id>/price", methods=["GET"])
+def get_car_price_calculation(id):
+    """
+    Получение детальной информации о расчете цены автомобиля по ID.
+
+    :param id: Уникальный идентификатор автомобиля (обязательно)
+    :type id: str
+
+    :return: JSON с информацией о расчете цены
+    :rtype: flask.Response
+
+    :Example HTTP GET:
+        GET /api/v1/cars/10420276/price-calculation
+
+    :Example Response:
+        {
+            "success": true,
+            "price_calculation": {
+                "currency_date": "16-07-2025 23:21",
+                "currency_rates": {
+                    "EUR": "91.1531"
+                },
+                "total_price": "6 922 665 ₽",
+                "breakdown": {
+                    "Услуги агента": "100 000 ₽",
+                    "Стоимость авто + расходы в Корее": "1 856 364 ₽",
+                    "Таможенные платежи": "1 251 501 ₽ (13 730 € )",
+                    "Утильсбор": "3 604 800 ₽",
+                    "Таможенный брокер": "110 000 ₽",
+                    "Автовоз": "0 ₽"
+                }
+            }
+        }
+
+    :status 200: Успешный запрос
+    :status 404: Автомобиль не найден
+    :status 500: Внутренняя ошибка сервера
+    :status 504: Таймаут при ожидании ответа от сайта
+    """
+    def task():
+        with pool_lock:
+            driver = driver_pool.pop() if driver_pool else create_driver()
+        
+        try:
+            scraper = Scraper(
+                url=CARPAGE_URL+str(id),
+                driver=driver
+            )
+            price_data = scraper.scrape_price_calculation()
+
+            return Response(
+                json.dumps({
+                    "success": True,
+                    "price_calculation": price_data
+                }, ensure_ascii=False, indent=2),
+                status=200,
+                content_type='application/json; charset=utf-8'
+            )
+            
+        except NoSuchElementException:
+            return Response(
+                json.dumps({
+                    "success": False,
+                    "error": "Данные не найдены"
+                }, ensure_ascii=False, indent=2),
+                status=404,
+                mimetype='application/json; charset=utf-8'
+            )
+            
+        except Exception as e:
+            logger.error(f"Error: {str(e)}")
+            return Response(
+                    json.dumps({
+                        "success": False,
+                        "error": str(e)
+                    }, ensure_ascii=False, indent=2),
+                    status=500,
+                    mimetype='application/json; charset=utf-8'
+                )
+            
+        finally:
+            with pool_lock:
+                driver_pool.append(driver)
+
+    try:
+        future = executor.submit(task)
+        return future.result(timeout=30)
+    except TimeoutException:
+        return Response(
+            json.dumps({
+                "success": False,
+                "error": "Сайт не отвечает"
+            }, ensure_ascii=False, indent=2),
+            status=504,
+            mimetype='application/json; charset=utf-8'
+        )
+
 # if __name__ == "__main__":
 #     app.run(host="0.0.0.0", port=5000, threaded=True, debug=True)
     
