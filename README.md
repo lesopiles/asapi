@@ -11,6 +11,7 @@
     <li><code>brand</code> (string, optional): Марка автомобиля</li>
     <li><code>model</code> (string, optional): Модель автомобиля</li>
     <li><code>gen</code> (string, optional): Поколение модели</li>
+    <li><code>color</code> (string, optional): Цвет автомобиля</li>
     <li><code>page_num</code> (string, default="1"): Номер страницы</li>
     <li><code>year_from</code> (string, optional): Год выпуска от</li>
     <li><code>year_to</code> (string, optional): Год выпуска до</li>
